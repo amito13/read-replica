@@ -1,0 +1,40 @@
+services:
+  postgres-primary:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: read_replica
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - primary-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d read_replica"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  postgres-replica:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: read_replica
+    ports:
+      - "127.0.0.1:5433:5432"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    volumes:
+      - replica-manual-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d read_replica"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  primary-data:
+  replica-manual-data:
